@@ -10,6 +10,7 @@ RUN apt-get update && \
         rsyslog \
         netcat \
         gnupg \
+        libcurl3-gnutls \
     && \
     pip install xmlrunner
 

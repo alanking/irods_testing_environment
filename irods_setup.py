@@ -275,6 +275,102 @@ class setup_input_builder(object):
             raise NotImplementedError('unsupported catalog service role [{}]'.format(self.catalog_service_role))
 
 
+def setup_irods_server_43(container, setup_input):
+    """Set up iRODS server on the given container with the provided input.
+
+    After setup completes, the server is restarted in order to guarantee that the iRODS server
+    is running and available for immediate use after setting it up.
+
+    Arguments:
+    container -- docker.client.container on which the iRODS packages are installed
+    setup_input -- string which will be provided as input to the iRODS setup script
+    """
+    irodsctl = os.path.join(context.irods_home(), 'irodsctl')
+    ec = execute.execute_command(container, '{} stop'.format(irodsctl), user='irods')
+    if ec is not 0:
+        logging.debug('failed to stop iRODS server before setup [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, 'bash -c \'echo "{}" > /input\''.format(setup_input))
+    if ec is not 0:
+        raise RuntimeError('failed to create setup script input file [{}]'.format(container.name))
+
+    execute.execute_command(container, 'cat /input')
+
+    path_to_setup_script = os.path.join(context.irods_home(), 'scripts', 'setup_irods.py')
+    run_setup_script = 'bash -c \'python {0} < /input\''.format(path_to_setup_script)
+    ec = execute.execute_command(container, run_setup_script)
+    if ec is not 0:
+        raise RuntimeError('failed to set up iRODS server [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, '{} restart'.format(irodsctl), user='irods')
+    if ec is not 0:
+        raise RuntimeError('failed to start iRODS server after setup [{}]'.format(container.name))
+
+
+def setup_irods_server_42(container, setup_input):
+    """Set up iRODS server on the given container with the provided input.
+
+    After setup completes, the server is restarted in order to guarantee that the iRODS server
+    is running and available for immediate use after setting it up.
+
+    Arguments:
+    container -- docker.client.container on which the iRODS packages are installed
+    setup_input -- string which will be provided as input to the iRODS setup script
+    """
+    irodsctl = os.path.join(context.irods_home(), 'irodsctl')
+    ec = execute.execute_command(container, '{} stop'.format(irodsctl), user='irods')
+    if ec is not 0:
+        logging.debug('failed to stop iRODS server before setup [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, 'bash -c \'echo "{}" > /input\''.format(setup_input))
+    if ec is not 0:
+        raise RuntimeError('failed to create setup script input file [{}]'.format(container.name))
+
+    execute.execute_command(container, 'cat /input')
+
+    path_to_setup_script = os.path.join(context.irods_home(), 'scripts', 'setup_irods.py')
+    run_setup_script = 'bash -c \'python {0} < /input\''.format(path_to_setup_script)
+    ec = execute.execute_command(container, run_setup_script)
+    if ec is not 0:
+        raise RuntimeError('failed to set up iRODS server [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, '{} restart'.format(irodsctl), user='irods')
+    if ec is not 0:
+        raise RuntimeError('failed to start iRODS server after setup [{}]'.format(container.name))
+
+
+def setup_irods_server_41(container, setup_input):
+    """Set up iRODS server on the given container with the provided input.
+
+    After setup completes, the server is restarted in order to guarantee that the iRODS server
+    is running and available for immediate use after setting it up.
+
+    Arguments:
+    container -- docker.client.container on which the iRODS packages are installed
+    setup_input -- string which will be provided as input to the iRODS setup script
+    """
+    irodsctl = os.path.join(context.irods_home(), 'irodsctl')
+    ec = execute.execute_command(container, '{} stop'.format(irodsctl), user='irods')
+    if ec is not 0:
+        logging.debug('failed to stop iRODS server before setup [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, 'bash -c \'echo "{}" > /input\''.format(setup_input))
+    if ec is not 0:
+        raise RuntimeError('failed to create setup script input file [{}]'.format(container.name))
+
+    execute.execute_command(container, 'cat /input')
+
+    path_to_setup_script = os.path.join(context.irods_home(), 'scripts', 'setup_irods.py')
+    run_setup_script = 'bash -c \'python {0} < /input\''.format(path_to_setup_script)
+    ec = execute.execute_command(container, run_setup_script)
+    if ec is not 0:
+        raise RuntimeError('failed to set up iRODS server [{}]'.format(container.name))
+
+    ec = execute.execute_command(container, '{} restart'.format(irodsctl), user='irods')
+    if ec is not 0:
+        raise RuntimeError('failed to start iRODS server after setup [{}]'.format(container.name))
+
+
 def setup_irods_server(container, setup_input):
     """Set up iRODS server on the given container with the provided input.
 
