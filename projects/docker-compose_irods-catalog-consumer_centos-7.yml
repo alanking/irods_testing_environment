@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+    irods-catalog-consumer:
+        build:
+            dockerfile: centos-7.Dockerfile
+        depends_on:
+            - irods-catalog-provider

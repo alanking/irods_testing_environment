@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+    catalog:
+        image: postgres:10.12
+        environment:
+            - POSTGRES_PASSWORD=testpassword
