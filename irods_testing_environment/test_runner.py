@@ -159,13 +159,6 @@ class test_runner_irods_python_suite(test_runner):
         super(test_runner_irods_python_suite, self).__init__(executing_container, tests)
 
 
-    @staticmethod
-    def run_tests_command(container):
-        """Return a list of strings used as a space-delimited invocation of the test runner."""
-        from . import container_info
-        return [container_info.python(container), context.run_tests_script()]
-
-
     def execute_test(self, test, options=None):
         """Execute `test` with `options` and return the command run and the return code.
 
@@ -173,7 +166,16 @@ class test_runner_irods_python_suite(test_runner):
         test -- name of the test to execute
         options -- list of strings which will be appended to the command to execute
         """
-        cmd = self.run_tests_command(self.executor) + ['--run_specific_test', test]
+        from . import container_info
+        from . import services
+
+        # We should only restart the server to be in test mode the very first time
+        if test is not self.tests[0]:
+            services.restart_irods_server(self.executor)
+
+        cmd = [container_info.python(self.executor), context.run_tests_script(),
+               '--run_specific_test', test]
+
         if options: cmd.extend(options)
         return cmd, execute.execute_command(self.executor,
                                             ' '.join(cmd),

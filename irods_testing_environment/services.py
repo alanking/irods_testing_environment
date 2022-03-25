@@ -112,3 +112,15 @@ def clone_repository_to_container(container,
                                             [os.path.abspath(repo_path)], repo_name))
 
     return repo_path
+
+
+def restart_irods_server(container, test_mode=True):
+    cmd = './irodsctl restart'
+
+    if test_mode:
+        cmd = cmd + ' --test'
+
+    rc = execute.execute_command(container, cmd, user='irods', workdir=context.irods_home())
+
+    if rc is not 0:
+        raise RuntimeError(f'[{container.name}] failed to restart iRODS [rc={rc}]')
