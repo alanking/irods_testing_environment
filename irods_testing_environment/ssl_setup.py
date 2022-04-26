@@ -140,7 +140,7 @@ def configure_ssl_on_server(container,
     logging.warning('SSL configured successfully [{}]'.format(container.name))
 
 
-def configure_ssl_in_zone(docker_client, compose_project):
+def configure_ssl_in_zone(docker_client, zone_info):
     import concurrent.futures
     import tempfile
 
@@ -157,10 +157,9 @@ def configure_ssl_in_zone(docker_client, compose_project):
 
         # Configure SSL on the catalog service providers first because communication with the
         # catalog service consumers depends on being able to communicate with the catalog
-        # service provider. If SSL is not configured first on the catalog service provider
-        # the catalog service consumers will not be able to communicate with it.
-        csps = compose_project.containers(service_names=[
-            context.irods_catalog_provider_service()])
+        # service provider. If SSL is not configured first on the catalog service provider the
+        # catalog service consumers will not be able to communicate with it.
+        csps = zone_info.provider_service_instance
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures_to_containers = {
@@ -185,8 +184,7 @@ def configure_ssl_in_zone(docker_client, compose_project):
         if rc is not 0:
             raise RuntimeError('failed to configure SSL on some service')
 
-        cscs = compose_project.containers(service_names=[
-            context.irods_catalog_consumer_service()])
+        cscs = zone_info.consumer_service_instances
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures_to_containers = {

@@ -13,6 +13,7 @@ from irods_testing_environment import irods_setup
 from irods_testing_environment import irods_config
 from irods_testing_environment import json_utils
 from irods_testing_environment import federate
+from irods_testing_environment import ssl_setup
 from irods_testing_environment.install import install
 
 if __name__ == "__main__":
@@ -52,6 +53,12 @@ if __name__ == "__main__":
     parser.add_argument('--skip-setup',
                         action='store_false', dest='do_setup',
                         help='If indicated, the Zones will not be set up, only federated.')
+
+    parser.add_argument('--use-ssl',
+                        dest='use_ssl', action='store_true',
+                        help=textwrap.dedent('''\
+                            Indicates that SSL should be configured and enabled in the Zone.\
+                            '''))
 
     args = parser.parse_args()
 
@@ -99,3 +106,6 @@ if __name__ == "__main__":
 
     federate.form_federation_clique(ctx, zone_info_list, args.federate_consumers)
 
+    if args.use_ssl:
+        for z in zone_info_list:
+            ssl_setup.configure_ssl_in_zone(ctx.docker_client, z)

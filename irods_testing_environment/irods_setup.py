@@ -34,7 +34,7 @@ class zone_info(object):
                                       containers for this Zone (if None is provided, all running
                                       iRODS Catalog Service Consumer service instances are
                                       determined to be part of this Zone, per the irods_setup
-                                      interfaces. list() indicates that no iRODS Catalog
+                                      interfaces). list() indicates that no iRODS Catalog
                                       Service Consumers are in this zone.
         """
         self.zone_name = zone_name
@@ -42,8 +42,9 @@ class zone_info(object):
         self.negotiation_key = negotiation_key
         self.zone_port = zone_port
         self.database_service_instance = database_service_instance
+        # TODO: allow for multiple providers
         self.provider_service_instance = provider_service_instance
-        self.consumer_service_instances = consumer_service_instances
+        self.consumer_service_instances = consumer_service_instances or list()
 
     def provider_hostname(self, ctx):
         """Return hostname for the container running the iRODS CSP."""
