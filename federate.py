@@ -108,4 +108,4 @@ if __name__ == "__main__":
 
     if args.use_ssl:
         for z in zone_info_list:
-            ssl_setup.configure_ssl_in_zone(ctx.docker_client, z)
+            ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project, z)
