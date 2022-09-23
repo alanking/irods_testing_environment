@@ -123,6 +123,16 @@ def add_irods_test_args(parser):
                         action='store_false', dest='do_setup',
                         help='If indicated, the iRODS servers will not be set up.')
 
+    parser.add_argument('--async-setup',
+                        action='store_true', dest='async_setup',
+                        help=textwrap.dedent('''\
+                            If indicated, the Compose project will be brought up and expected \
+                            setup steps are assumed to be performed asynchronously by other \
+                            means. This is most useful for use with projects which perform \
+                            setup on their own. --skip-setup is implied when using this \
+                            option. The setup is considered done when the iRODS catalog \
+                            provider service responds on port 1247, indicating that iRODS is \
+                            setup and running.'''))
 
 def add_database_config_args(parser):
     '''Add argparse options related to setting up and configuring iRODS.

@@ -54,10 +54,21 @@ if __name__ == "__main__":
     rc = 0
 
     try:
-        if args.do_setup:
+        consumer_count = 0
+        if args.async_setup:
+            ctx.compose_project.build()
+            ctx.compose_project.up(scale_override={
+                context.irods_catalog_database_service(): args.executor_count,
+                context.irods_catalog_provider_service(): args.executor_count,
+                context.irods_catalog_consumer_service(): consumer_count * args.executor_count
+                }
+            )
+
+            services.wait_for_topology_setup(ctx, args.executor_count, consumer_count, 30, 1)
+
+        elif args.do_setup:
             # Bring up the services
             logging.debug('bringing up project [{}]'.format(ctx.compose_project.name))
-            consumer_count = 0
             services.create_topologies(ctx,
                                        zone_count=args.executor_count,
                                        externals_directory=args.irods_externals_package_directory,
