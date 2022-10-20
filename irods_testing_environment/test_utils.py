@@ -192,30 +192,31 @@ def _discover_tests(container):
     import os
     import unittest
 
-    from . import archive
+    #from . import archive
 
-    scripts_dir = archive.copy_from_container(container, context.irods_home())
-    logging.info(f'downloaded scripts to [{scripts_dir}]')
+    #scripts_dir = archive.copy_from_container(container, context.irods_home())
+    #logging.info(f'downloaded scripts to [{scripts_dir}]')
 
     loader = unittest.TestLoader()
     #suite = loader.discover(os.path.join(scripts_dir, 'scripts'), pattern='test_*.py')
-    discovery = loader.discover(os.path.join(scripts_dir, 'irods/scripts'), pattern='test_*.py')
+    #discovery = loader.discover(os.path.join(scripts_dir, 'irods/scripts'), pattern='test_*.py')
+    discovery = loader.discover('/var/lib/irods/scripts', pattern='test_*.py')
     tests = list()
     for m in discovery:
-        logging.debug(f'found module: [{m}]')
+        #logging.debug(f'found module: [{m}]')
         for s in m._tests:
-            logging.debug(f'found suite: [{s}]')
+            #logging.debug(f'found suite: [{s}]')
             for t in s._tests:
-                logging.debug(f'found test: [{t}]')
+                #logging.debug(f'found test: [{t}]')
                 module = t.__module__
                 cls = t.__class__.__name__
                 test = t._testMethodName
                 t = '.'.join([module, cls, test])
                 tests.append('.'.join(t.split('.')[2:]))
 
-    logging.info('>>> test list here <<<')
-    logging.info(tests)
-    logging.info('>>> test list done <<<')
+    #logging.info('>>> test list here <<<')
+    #logging.info(tests)
+    #logging.info('>>> test list done <<<')
 
     return tests
 
@@ -227,8 +228,11 @@ def discover_tests(container):
     from . import archive
 
     # TODO: we have to copy the python file!
+    path_to_local_script = '/home/alanking/hdd/irods_testing_environment/discovery.py'
+    tarfile = archive.create_archive([path_to_local_script])
+    archive.copy_archive_to_container(container, tarfile)
 
-    cmd = 'bash -c \'python3 /discover.py > /testlist\''
+    cmd = f'bash -c \'python3 {path_to_local_script} > /testlist\''
 
     ec = execute.execute_command(container, cmd,
                                  workdir=context.irods_scripts_directory(),
