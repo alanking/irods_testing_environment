@@ -11,7 +11,7 @@ from . import execute
 class test_runner:
     """A class that manages a list of tests and can execute them on a managed container."""
 
-    def __init__(self, executing_container):
+    def __init__(self, executing_container, options):
         """Constructor for `test_runner`.
 
         Arguments:
@@ -21,6 +21,7 @@ class test_runner:
         self.executor = executing_container
         self.tests = list()
         self.rc = 0
+        self.options = options
 
         # When a test completes - whether passing or failing - it will be associated with an
         # epoch timestamp from the time module representing the time it took to pass or fail.
@@ -133,7 +134,7 @@ class test_runner:
 
                 start = time.time()
 
-                cmd, ec = self.execute_test(t, **kwargs)
+                cmd, ec = self.execute_test(t, options=self.options, **kwargs)
 
                 end = time.time()
 

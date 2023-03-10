@@ -9,7 +9,7 @@ from . import test_runner
 class test_manager:
     """A class that manages a list of tests and `test_runners` for executing tests."""
 
-    def __init__(self, containers, tests, test_type='irods_python_suite'):
+    def __init__(self, containers, tests, options, test_type='irods_python_suite'):
         """Constructor for `test_manager`.
 
         A note about passing `None` to `tests`:
@@ -28,7 +28,10 @@ class test_manager:
         tr_name = '_'.join(['test_runner', test_type])
         tr = eval('.'.join(['test_runner', tr_name]))
         logging.info('[{}]'.format(tr))
-        self.test_runners = [tr(c) for c in containers]
+        #self.test_runners = [tr(c) for c in containers]
+        self.test_runners = list()
+        for i in range(len(containers)):
+            self.test_runners.append(tr(containers(i), options(i)))
         self.test_list = tests
 
         logging.info('[{}]'.format(tests))

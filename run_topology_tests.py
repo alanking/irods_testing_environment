@@ -101,8 +101,6 @@ if __name__ == "__main__":
             logging.info('configuring iRODS containers for testing')
             irods_config.configure_irods_testing(ctx.docker_client, ctx.compose_project)
 
-        zone_info_list = irods_setup.get_info_for_zones(ctx, zone_name, consumer_count)
-
         run_on_consumer = args.run_on == 'consumer'
 
         if run_on_consumer:
@@ -122,29 +120,33 @@ if __name__ == "__main__":
         ]
         logging.debug('got containers to run on [{}]'.format(container.name for container in containers))
 
-        options = ['--xml_output']
+        options_base = ['--xml_output']
+        options_base.append('--topology={}'.format('resource' if run_on_consumer else 'icat'))
 
-        options.append('--topology={}'.format('resource' if run_on_consumer else 'icat'))
+        hostname_map = context.project_hostnames(ctx.docker_client, ctx.compose_project)
 
-        hostname_map = context.topology_hostnames(ctx.docker_client, ctx.compose_project)
+        options_list = list()
+        for executor in range(args.executor_count):
+            # The services are 1-based, so we need to add 1.
+            service_instance = executor + 1
 
-        icat_hostname = hostname_map[context.container_name(ctx.compose_project.name,
-                                     context.irods_catalog_provider_service())]
-        hostname_1 = hostname_map[context.container_name(ctx.compose_project.name,
-                                  context.irods_catalog_consumer_service(), 1)]
-        hostname_2 = hostname_map[context.container_name(ctx.compose_project.name,
-                                  context.irods_catalog_consumer_service(), 2)]
-        hostname_3 = hostname_map[context.container_name(ctx.compose_project.name,
-                                  context.irods_catalog_consumer_service(), 3)]
+            icat_hostname = hostname_map[context.container_name(ctx.compose_project.name,
+                                         context.irods_catalog_provider_service(service_instance))]
+            hostname_1 = hostname_map[context.container_name(ctx.compose_project.name,
+                                      context.irods_catalog_consumer_service(), 1 * service_instance)]
+            hostname_2 = hostname_map[context.container_name(ctx.compose_project.name,
+                                      context.irods_catalog_consumer_service(), 2 * service_instance)]
+            hostname_3 = hostname_map[context.container_name(ctx.compose_project.name,
+                                      context.irods_catalog_consumer_service(), 3 * service_instance)]
 
-        options.extend(['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3])
+            options_list.append([options_base] + ['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3])
 
         if args.use_ssl:
             options.append('--use_ssl')
             if args.do_setup:
                 ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
 
-        rc = test_utils.run_specific_tests_topology([container], args.tests, options, args.fail_fast)
+        rc = test_utils.run_specific_tests_topology(containers, args.tests, options_list, args.fail_fast)
 
     except Exception as e:
         logging.critical(e)
