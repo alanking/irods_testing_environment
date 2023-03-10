@@ -81,14 +81,15 @@ if __name__ == "__main__":
     container = None
 
     try:
+        # some constants
+        zone_name = 'tempZone'
+        consumer_count = 3
+
         if args.do_setup:
             # Bring up the services
             logging.debug('bringing up project [{}]'.format(ctx.compose_project.name))
-            # TODO: remove when parallel topology tests become a thing
-            zone_count = 1
-            consumer_count = 3
             services.create_topologies(ctx,
-                                       zone_count=zone_count,
+                                       zone_count=args.executor_count,
                                        externals_directory=args.irods_externals_package_directory,
                                        package_directory=args.package_directory,
                                        package_version=args.package_version,
@@ -100,18 +101,26 @@ if __name__ == "__main__":
             logging.info('configuring iRODS containers for testing')
             irods_config.configure_irods_testing(ctx.docker_client, ctx.compose_project)
 
+        zone_info_list = irods_setup.get_info_for_zones(ctx, zone_name, consumer_count)
+
         run_on_consumer = args.run_on == 'consumer'
 
-        target_service_name = context.irods_catalog_consumer_service() if run_on_consumer \
-                              else context.irods_catalog_provider_service()
+        if run_on_consumer:
+            target_service_name = context.irods_catalog_consumer_service()
+        else:
+            target_service_name = context.irods_catalog_provider_service()
 
         # Get the container on which the command is to be executed
-        container = ctx.docker_client.containers.get(
-            context.container_name(ctx.compose_project.name,
-                                   target_service_name,
-                                   service_instance=1)
-        )
-        logging.debug('got container to run on [{}]'.format(container.name))
+        container = ctx.docker_client.containers.get
+        containers = [
+            ctx.docker_client.containers.get(
+                context.container_name(ctx.compose_project.name,
+                                       target_service_name,
+                                       service_instance=i + 1)
+                )
+            for i in range(args.executor_count)
+        ]
+        logging.debug('got containers to run on [{}]'.format(container.name for container in containers))
 
         options = ['--xml_output']
 
@@ -130,11 +139,12 @@ if __name__ == "__main__":
 
         options.extend(['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3])
 
-        if args.do_setup and args.use_ssl:
-            ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
+        if args.use_ssl:
             options.append('--use_ssl')
+            if args.do_setup:
+                ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
 
-        rc = test_utils.run_specific_tests([container], args.tests, options, args.fail_fast)
+        rc = test_utils.run_specific_tests_topology([container], args.tests, options, args.fail_fast)
 
     except Exception as e:
         logging.critical(e)
@@ -142,9 +152,9 @@ if __name__ == "__main__":
         raise
 
     finally:
-        if container:
-            # Just grab the version and sha from the test container since it is what is being tested.
-            cli.log_irods_version_and_commit_id(container)
+        if containers:
+            # Just grab the version and sha from the first container since they are all running the same thing.
+            cli.log_irods_version_and_commit_id(containers[0])
 
         if args.save_logs:
             try:

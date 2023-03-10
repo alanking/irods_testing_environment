@@ -100,6 +100,34 @@ def run_plugin_tests(containers,
     return tm.return_code()
 
 
+def run_specific_tests_topology(ctx,
+                                zone_info_list,
+                                test_executor_list=None,
+                                test_list=None,
+                                options=None,
+                                fail_fast=True):
+    """Run a set of tests from the python test suite for iRODS.
+
+    Arguments:
+    zone_info_list -- a list of zone infos on which the tests will run
+    test_executor_list -- a list of service instances on which tests will run
+    test_list -- a list of strings of the tests to be run
+    options -- list of strings representing script options to pass to the run_tests.py script
+    fail_fast -- if True, stop running after first failure; else, runs all tests
+    """
+    tests = test_list or get_test_list(zone_info_list[0].provider_container(ctx))
+
+    tm = test_manager.test_manager(containers, tests)
+
+    try:
+        tm.run(fail_fast, options=options)
+
+    finally:
+        logging.error(tm.result_string())
+
+    return tm.return_code()
+
+
 def run_specific_tests(containers, test_list=None, options=None, fail_fast=True):
     """Run a set of tests from the python test suite for iRODS.
 
