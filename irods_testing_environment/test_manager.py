@@ -27,20 +27,17 @@ class test_manager:
         """
         tr_name = '_'.join(['test_runner', test_type])
         tr = eval('.'.join(['test_runner', tr_name]))
-        logging.info('[{}]'.format(tr))
+        logging.debug('[{}]'.format(tr))
         #self.test_runners = [tr(c) for c in containers]
-        self.test_runners = list()
-        for i in range(len(containers)):
-            self.test_runners.append(tr(containers(i), options(i)))
+        self.test_runners = [tr(containers[i], options[i]) for i in range(len(containers))]
         self.test_list = tests
 
-        logging.info('[{}]'.format(tests))
-        logging.info('[{}]'.format(str(self)))
-        logging.info('[{}]'.format(self.test_runners))
+        logging.debug('[{}]'.format(tests))
+        logging.debug('[{}]'.format(self.test_runners))
 
         self.duration = -1
 
-        logging.info('[{}]'.format(str(self)))
+        logging.debug('[{}]'.format(str(self)))
 
 
     def __str__(self):

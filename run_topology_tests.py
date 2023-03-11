@@ -78,7 +78,7 @@ if __name__ == "__main__":
     logs.configure(args.verbosity, os.path.join(output_directory, 'script_output.log'))
 
     rc = 0
-    container = None
+    containers = None
 
     try:
         # some constants
@@ -109,7 +109,6 @@ if __name__ == "__main__":
             target_service_name = context.irods_catalog_provider_service()
 
         # Get the container on which the command is to be executed
-        container = ctx.docker_client.containers.get
         containers = [
             ctx.docker_client.containers.get(
                 context.container_name(ctx.compose_project.name,
@@ -125,13 +124,18 @@ if __name__ == "__main__":
 
         hostname_map = context.project_hostnames(ctx.docker_client, ctx.compose_project)
 
+        if args.use_ssl:
+            options_base.append('--use_ssl')
+            if args.do_setup:
+                ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
+
         options_list = list()
         for executor in range(args.executor_count):
             # The services are 1-based, so we need to add 1.
             service_instance = executor + 1
 
             icat_hostname = hostname_map[context.container_name(ctx.compose_project.name,
-                                         context.irods_catalog_provider_service(service_instance))]
+                                         context.irods_catalog_provider_service(), service_instance)]
             hostname_1 = hostname_map[context.container_name(ctx.compose_project.name,
                                       context.irods_catalog_consumer_service(), 1 * service_instance)]
             hostname_2 = hostname_map[context.container_name(ctx.compose_project.name,
@@ -139,12 +143,8 @@ if __name__ == "__main__":
             hostname_3 = hostname_map[context.container_name(ctx.compose_project.name,
                                       context.irods_catalog_consumer_service(), 3 * service_instance)]
 
-            options_list.append([options_base] + ['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3])
-
-        if args.use_ssl:
-            options.append('--use_ssl')
-            if args.do_setup:
-                ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
+            options = options_base + ['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3]
+            options_list.append(options)
 
         rc = test_utils.run_specific_tests_topology(containers, args.tests, options_list, args.fail_fast)
 
@@ -166,8 +166,9 @@ if __name__ == "__main__":
                 logs.collect_logs(ctx.docker_client, ctx.irods_containers(), output_directory)
 
                 # and then the test reports
+                # TODO: Get all the test reports
                 archive.collect_files_from_containers(ctx.docker_client,
-                                                      [container],
+                                                      containers,
                                                       [os.path.join(context.irods_home(), 'test-reports')],
                                                       output_directory)
 

@@ -101,7 +101,6 @@ def run_plugin_tests(containers,
 
 
 def run_specific_tests_topology(containers,
-                                test_executor_list=None,
                                 test_list=None,
                                 options_list=None,
                                 fail_fast=True):
@@ -109,14 +108,13 @@ def run_specific_tests_topology(containers,
 
     Arguments:
     containers -- target containers on which the tests will run
-    test_executor_list -- a list of service instances on which tests will run
     test_list -- a list of strings of the tests to be run
     options_list -- list of strings parallel to list of containers to pass to the run_tests.py script
     fail_fast -- if True, stop running after first failure; else, runs all tests
     """
     tests = test_list or get_test_list(containers[0])
 
-    tm = test_manager.test_manager(containers, tests, options)
+    tm = test_manager.test_manager(containers, tests, options_list)
 
     try:
         #tm.run(fail_fast, options=options)

@@ -134,6 +134,7 @@ class test_runner:
 
                 start = time.time()
 
+                logging.debug(f'[{self.name()}] options:[{self.options}]')
                 cmd, ec = self.execute_test(t, options=self.options, **kwargs)
 
                 end = time.time()
@@ -173,8 +174,8 @@ class test_runner:
 
 
 class test_runner_irods_python_suite(test_runner):
-    def __init__(self, executing_container):
-        super(test_runner_irods_python_suite, self).__init__(executing_container)
+    def __init__(self, executing_container, options):
+        super(test_runner_irods_python_suite, self).__init__(executing_container, options)
 
 
     @staticmethod
@@ -208,7 +209,7 @@ class test_runner_irods_python_suite(test_runner):
 
 class test_runner_irods_unit_tests(test_runner):
     def __init__(self, executing_container):
-        super(test_runner_irods_unit_tests, self).__init__(executing_container)
+        super(test_runner_irods_unit_tests, self).__init__(executing_container, options)
 
 
     def execute_test(self, test, reporter='junit'):
@@ -239,7 +240,7 @@ class test_runner_irods_unit_tests(test_runner):
 
 class test_runner_irods_plugin_tests(test_runner):
     def __init__(self, executing_container):
-        super(test_runner_irods_plugin_tests, self).__init__(executing_container)
+        super(test_runner_irods_plugin_tests, self).__init__(executing_container, options)
 
 
     # TODO: this could likely just be implemented in yet another subclass
