@@ -130,21 +130,41 @@ if __name__ == "__main__":
                 ssl_setup.configure_ssl_in_zone(ctx.docker_client, ctx.compose_project)
 
         options_list = list()
-        for executor in range(args.executor_count):
+        for i in range(args.executor_count):
             # The services are 1-based, so we need to add 1.
-            service_instance = executor + 1
+            service_instance = i + 1
 
-            icat_hostname = hostname_map[context.container_name(ctx.compose_project.name,
-                                         context.irods_catalog_provider_service(), service_instance)]
-            hostname_1 = hostname_map[context.container_name(ctx.compose_project.name,
-                                      context.irods_catalog_consumer_service(), 1 * service_instance)]
-            hostname_2 = hostname_map[context.container_name(ctx.compose_project.name,
-                                      context.irods_catalog_consumer_service(), 2 * service_instance)]
-            hostname_3 = hostname_map[context.container_name(ctx.compose_project.name,
-                                      context.irods_catalog_consumer_service(), 3 * service_instance)]
+            hostnames_option = [
+                'hostnames',
+                hostname_map[
+                    context.container_name(
+                        ctx.compose_project.name,
+                        context.irods_catalog_provider_service(),
+                        service_instance
+                    )
+                ]
+            ]
 
-            options = options_base + ['--hostnames', icat_hostname, hostname_1, hostname_2, hostname_3]
-            options_list.append(options)
+            consumer_hostnames = list()
+            for c in ctx.compose_project.containers():
+                container_is_consumer_for_this_zone = \
+                    context.is_irods_catalog_consumer_container(c) and \
+                    context.service_instance(c.name) > i * consumer_count and \
+                    context.service_instance(c.name) <= (i + 1) * consumer_count
+                if container_is_consumer_for_this_zone:
+                    hostnames_option.append(
+                        hostname_map[
+                            context.container_name(
+                                ctx.compose_project.name,
+                                context.irods_catalog_consumer_service(),
+                                context.service_instance(c.name)
+                            )
+                        ]
+                    )
+
+            options_list.append(options_base + hostnames_option)
+
+        print(options_list)
 
         rc = test_utils.run_specific_tests_topology(containers, args.tests, options_list, args.fail_fast)
 
