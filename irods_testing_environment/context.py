@@ -145,25 +145,25 @@ def sanitize(repo_or_tag):
 
 
 def project_name(container_name):
-    """Return the docker-compose project name based on the `container_name`.
+    """Return the docker compose v2 project name based on the `container_name`.
 
-    NOTE: docker-compose "sanitizes" project names to remove certain special characters, so the
-    `--project-name` provided to `docker-compose` may be different from the project name used
-    when constructed the name of the image(s) and container(s).
+    docker compose v2 container names are generated as:
+        project-name-service-name-service-instance
+    We parse using rsplit to preserve service names containing dashes.
 
     Arguments:
     container_name -- the name of the container from which the project name is extracted
     """
-    return container_name.split('_')[0]
+    return container_name.rsplit('-', 2)[0]
 
 
-def service_name(container_name):
-    """Return the docker-compose project service name based on the `container_name`.
-
-    Arguments:
-    container_name -- the name of the container from which the service name is extracted
-    """
-    return container_name.split('_')[1]
+#def service_name(container_name):
+#    """Return the docker compose v2 project service name based on the `container_name`.
+#
+#    Arguments:
+#    container_name -- the name of the container from which the service name is extracted
+#    """
+#    return '-'.join(container_name.rsplit('-', 4)[1:-1])
 
 
 def service_instance(container_name):
@@ -172,23 +172,21 @@ def service_instance(container_name):
     Arguments:
     container_name -- the name of the container from which the service instance is extracted
     """
-    return int(container_name.split('_')[2])
+    return int(container_name.rsplit('-', 2)[2])
 
 
 def container_name(project_name, service_name, service_instance=1):
-    """Return the name of the container as constructed by docker-compose.
+    """Return the name of the container as constructed by docker compose v2.
 
-    The passed in `project_name` will have dots (.) removed because docker-compose strips all
-    dots from its project names. docker-compose container names are generated in three parts
-    which are delimited by underscores, like this:
-        project-name_service-name_service-instance-as-a-1-indexed-integer
+    docker compose v2 container names are generated in three parts delimited by dashes:
+        project-name-service-name-service-instance-as-a-1-indexed-integer
 
     Arguments:
-    project_name -- name of the docker-compose project (1)
-    service_name -- name of the service in the docker-compose project (2)
+    project_name -- name of the docker compose project (1)
+    service_name -- name of the service in the docker compose project (2)
     service_instance -- number of the instance of the service instance (3)
     """
-    return '_'.join([sanitize(project_name), service_name, str(service_instance)])
+    return '-'.join([sanitize(project_name), service_name, str(service_instance)])
 
 
 def base_image(container, tag=0):
@@ -214,7 +212,8 @@ def container_hostname(container):
     Arguments:
     container -- docker.container from which the hostname is to be extracted
     """
-    return container.client.api.inspect_container(container.name)['Config']['Hostname']
+    import docker
+    return docker.from_env().api.inspect_container(container.name)['Config']['Hostname']
 
 
 def container_ip(container, network_name=None):
@@ -224,7 +223,8 @@ def container_ip(container, network_name=None):
     container -- docker.container from which the IP is to be extracted
     network_name -- name of the docker network to inspect (if None, default network is used)
     """
-    return (container.client.api.inspect_container(container.name)
+    import docker
+    return (docker.from_env().api.inspect_container(container.name)
         ['NetworkSettings']
         ['Networks']
         [network_name or '_'.join([project_name(container.name), 'default'])]
@@ -300,17 +300,17 @@ def irods_catalog_database_container(project_name, service_instance=1):
 
 def is_catalog_database_container(container):
     """Return True if `container` is the database service. Otherwise, False."""
-    return service_name(container.name) == irods_catalog_database_service()
+    return container.name.rsplit('-', 2)[-2] == irods_catalog_database_service()
 
 
 def is_irods_catalog_provider_container(container):
     """Return True if `container` is the iRODS CSP service. Otherwise, False."""
-    return service_name(container.name) == irods_catalog_provider_service()
+    return '-'.join(container.name.rsplit('-', 4)[1:-1]) == irods_catalog_provider_service()
 
 
 def is_irods_catalog_consumer_container(container):
     """Return True if `container` is the iRODS CSC service. Otherwise, False."""
-    return service_name(container.name) == irods_catalog_consumer_service()
+    return '-'.join(container.name.rsplit('-', 4)[1:-1]) == irods_catalog_consumer_service()
 
 
 def is_irods_server_in_local_zone(container, local_zone):

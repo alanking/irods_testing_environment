@@ -110,7 +110,7 @@ class installer(object):
 
         packages = self.get_list_of_package_paths(package_directory, package_name_list)
 
-        logging.info('packages to install [{}]'.format(packages))
+        logging.info('(b) packages to install [{}]'.format(packages))
 
         tarfile_path = archive.create_archive(packages)
 
@@ -178,11 +178,11 @@ class installer(object):
         else:
             packages = context.irods_package_names(ctx.database_name())
 
-        logging.info('packages to install [{}]'.format(packages))
+        logging.info('(a) packages to install [{}]'.format(packages))
 
         rc = 0
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures_to_containers = {executor.submit(install_packages_, ctx, c, packages): c for c in containers}
+            futures_to_containers = {executor.submit(install_packages_, ctx, c, packages): c for c in containers if not context.is_catalog_database_container(c)}
             logging.debug(futures_to_containers)
 
             for f in concurrent.futures.as_completed(futures_to_containers):
@@ -262,9 +262,23 @@ def make_installer(platform_name):
     from . import rockylinux_installer
     from . import ubuntu_installer
 
-    name = '_'.join([platform_name, 'installer'])
+    normalized = platform_name.lower()
+    for prefix in ('almalinux', 'rockylinux', 'debian', 'ubuntu'):
+        if normalized.startswith(prefix):
+            normalized = prefix
+            break
 
-    return eval('.'.join([name, name]))()
+    installers = {
+        'almalinux': almalinux_installer.almalinux_installer,
+        'rockylinux': rockylinux_installer.rockylinux_installer,
+        'debian': debian_installer.debian_installer,
+        'ubuntu': ubuntu_installer.ubuntu_installer,
+    }
+
+    if normalized not in installers:
+        raise ValueError(f'unsupported platform [{platform_name}]')
+
+    return installers[normalized]()
 
 
 def install_pip_package_from_repo(container,
