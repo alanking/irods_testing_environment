@@ -1084,13 +1084,15 @@ def configure_odbc_driver(platform_image, database_image, csp_container, odbc_dr
     odbc_driver -- if specified, the ODBC driver will be sought here
     """
     import inspect
-    # generate the function name of the form:
-    #   configure_odbc_driver_platform-repo_platform-tag_database-repo_database-tag
-    func_name = '_'.join([inspect.currentframe().f_code.co_name,
-                          context.sanitize(context.image_repo(platform_image)),
-                          context.sanitize(context.image_tag(platform_image)),
-                          context.sanitize(context.image_repo(database_image)),
-                          context.sanitize(context.image_tag(database_image))])
 
-    eval(func_name)(csp_container, odbc_driver)
+    base_name = inspect.currentframe().f_code.co_name
+    pf_part = "_".join(platform_image.split("-", 2)[:2])
+    db_part = database_image.replace(':', '_').replace('.', '')
 
+    func = globals().get(f'{base_name}_{pf_part}_{db_part}')
+    if func:
+        return func(csp_container, odbc_driver)
+
+    raise NameError(
+        f"no ODBC configuration function found for platform [{platform_image}] and database [{database_image}]"
+    )
