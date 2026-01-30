@@ -186,7 +186,8 @@ def service_instance(container_name):
 
 
 def container_name(project_name, service_name, service_instance=1):
-    """Return the name of the container as constructed by docker compose v2.
+    """
+    Return the name of the container as constructed by docker compose v2.
 
     docker compose v2 container names are generated in three parts delimited by dashes:
         project-name-service-name-service-instance-as-a-1-indexed-integer

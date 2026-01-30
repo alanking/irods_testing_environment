@@ -110,7 +110,7 @@ class installer(object):
 
         packages = self.get_list_of_package_paths(package_directory, package_name_list)
 
-        logging.info('(b) packages to install [{}]'.format(packages))
+        logging.info("(b) packages to install [%s]" % packages)
 
         tarfile_path = archive.create_archive(packages)
 
@@ -178,7 +178,7 @@ class installer(object):
         else:
             packages = context.irods_package_names(ctx.database_name())
 
-        logging.info('(a) packages to install [{}]'.format(packages))
+        logging.info("(a) packages to install [%s]" % packages)
 
         rc = 0
         with concurrent.futures.ThreadPoolExecutor() as executor:

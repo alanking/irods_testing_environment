@@ -7,6 +7,7 @@ import subprocess
 import docker
 
 from .container import Container
+import pathlib
 
 
 def _sanitize_project_name(name):
@@ -18,8 +19,8 @@ class Project:
     """Subset of compose.project.Project used by this codebase."""
 
     def __init__(self, project_dir, project_name=None, docker_client=None):
-        self.project_dir = os.path.abspath(project_dir)
-        base_name = os.path.basename(self.project_dir.rstrip(os.sep))
+        self.project_dir = pathlib.Path(project_dir).resolve()
+        base_name = pathlib.Path(self.project_dir.rstrip(os.sep)).name
         name = project_name or base_name
         self.name = _sanitize_project_name(name)
         self._docker_client = docker_client or docker.from_env()
@@ -65,7 +66,7 @@ class Project:
 
         containers = []
         for sn in service_names:
-            f = {"label": label_filters + [f"com.docker.compose.service={sn}"]}
+            f = {"label": [*label_filters, f"com.docker.compose.service={sn}"]}
             for c in self._docker_client.containers.list(all=True, filters=f):
                 containers.append(c)
 
