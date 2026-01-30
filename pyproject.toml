@@ -1,0 +1,34 @@
+[project]
+name = "irods_testing_environment"
+authors = [
+	{name = "iRODS Consortium", email = "support@irods.org"},
+]
+description = "A Docker-based Testing Environment for iRODS"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.9"
+keywords = ["irods"]
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+classifiers = [
+	"Development Status :: 5 - Production/Stable",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+	"Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "cryptography",
+    "docker",
+    "GitPython",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/irods/irods_testing_environment"
+Issues = "https://github.com/irods/irods_testing_environment/issues"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
