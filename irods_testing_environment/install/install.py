@@ -263,20 +263,20 @@ def make_installer(platform_name):
     from . import ubuntu_installer
 
     normalized = platform_name.lower()
-    for prefix in ('almalinux', 'rockylinux', 'debian', 'ubuntu'):
+    for prefix in ("almalinux", "rockylinux", "debian", "ubuntu"):
         if normalized.startswith(prefix):
             normalized = prefix
             break
 
     installers = {
-        'almalinux': almalinux_installer.almalinux_installer,
-        'rockylinux': rockylinux_installer.rockylinux_installer,
-        'debian': debian_installer.debian_installer,
-        'ubuntu': ubuntu_installer.ubuntu_installer,
+        "almalinux": almalinux_installer.almalinux_installer,
+        "rockylinux": rockylinux_installer.rockylinux_installer,
+        "debian": debian_installer.debian_installer,
+        "ubuntu": ubuntu_installer.ubuntu_installer,
     }
 
     if normalized not in installers:
-        raise ValueError(f'unsupported platform [{platform_name}]')
+        raise ValueError(f"unsupported platform [{platform_name}]")
 
     return installers[normalized]()
 

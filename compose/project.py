@@ -8,12 +8,15 @@ import docker
 
 from .container import Container
 
+
 def _sanitize_project_name(name):
     # Match legacy usage in this repo: strip characters compose v1 rejects.
     return name.replace(".", "").replace(":", "").replace("/", "")
 
+
 class Project:
     """Subset of compose.project.Project used by this codebase."""
+
     def __init__(self, project_dir, project_name=None, docker_client=None):
         self.project_dir = os.path.abspath(project_dir)
         base_name = os.path.basename(self.project_dir.rstrip(os.sep))
@@ -55,7 +58,9 @@ class Project:
         label_filters = [f"com.docker.compose.project={self.name}"]
 
         if not service_names:
-            containers = self._docker_client.containers.list(all=True, filters={"label": label_filters})
+            containers = self._docker_client.containers.list(
+                all=True, filters={"label": label_filters}
+            )
             return [Container(c.name) for c in containers]
 
         containers = []
