@@ -19,9 +19,9 @@ classifiers = [
 	"Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    "cryptography",
-    "docker",
-    "GitPython",
+	"cryptography",
+	"docker",
+	"GitPython",
 ]
 dynamic = ["version"]
 
