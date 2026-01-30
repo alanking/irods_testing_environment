@@ -155,7 +155,8 @@ def sanitize(repo_or_tag):
 
 
 def project_name(container_name):
-    """Return the docker compose project name based on the `container_name`.
+    """
+    Return the docker compose project name based on the `container_name`.
 
     Arguments:
     container_name -- the name of the container from which the project name is extracted
@@ -164,7 +165,8 @@ def project_name(container_name):
 
 
 def service_name(container_name):
-    """Return the docker compose service name based on the `container_name`.
+    """
+    Return the docker compose service name based on the `container_name`.
 
     Arguments:
     container_name -- the name of the container from which the service name is extracted
@@ -173,15 +175,14 @@ def service_name(container_name):
 
 
 def service_instance(container_name):
-    """Return the docker compose service instance (i.e. container number) based on the `container_name`.
+    """
+    Return the docker compose service instance (i.e. container number) based on the `container_name`.
 
     Arguments:
     container_name -- the name of the container from which the service instance is extracted
     """
     return int(
-        docker_client().api.inspect_container(container_name)["Config"]["Labels"][
-            "com.docker.compose.container-number"
-        ]
+        docker_client().api.inspect_container(container_name)["Config"]["Labels"]["com.docker.compose.container-number"]
     )
 
 
