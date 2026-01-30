@@ -1089,7 +1089,7 @@ def configure_odbc_driver(platform_image, database_image, csp_container, odbc_dr
     pf_part = "_".join(platform_image.split("-", 2)[:2])
     db_part = database_image.replace(':', '_').replace('.', '')
 
-    func = globals().get("_".join([base_name, pf_part, db_part ]))
+    func = globals().get("_".join([base_name, pf_part, db_part]))
     if func:
         return func(csp_container, odbc_driver)
 
