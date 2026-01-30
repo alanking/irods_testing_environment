@@ -1,3 +1,14 @@
+import docker
+
+_docker_client = None
+
+
+def docker_client():
+    """Return a static docker.client instance constructed from the local environment."""
+    global _docker_client
+    return docker.from_env() if _docker_client is None else _docker_client
+
+
 class context(object):
     """Class for holding Docker/Compose environment and container context information."""
     def __init__(self, docker_client=None, compose_project=None):
@@ -8,8 +19,7 @@ class context(object):
         docker_client -- Docker client environment with which we communicate with the daemon
         compose_project -- compose.project information
         """
-        import docker
-        self.docker_client = docker_client or docker.from_env()
+        self.docker_client = docker_client or docker_client()
         self.compose_project = compose_project
         self.platform_image_tag = None
         self.database_image_tag = None
@@ -145,34 +155,34 @@ def sanitize(repo_or_tag):
 
 
 def project_name(container_name):
-    """Return the docker compose v2 project name based on the `container_name`.
-
-    docker compose v2 container names are generated as:
-        project-name-service-name-service-instance
-    We parse using rsplit to preserve service names containing dashes.
+    """Return the docker compose project name based on the `container_name`.
 
     Arguments:
     container_name -- the name of the container from which the project name is extracted
     """
-    return container_name.rsplit('-', 2)[0]
+    return docker_client().api.inspect_container(container_name)["Config"]["Labels"]["com.docker.compose.project"]
 
 
-#def service_name(container_name):
-#    """Return the docker compose v2 project service name based on the `container_name`.
-#
-#    Arguments:
-#    container_name -- the name of the container from which the service name is extracted
-#    """
-#    return '-'.join(container_name.rsplit('-', 4)[1:-1])
+def service_name(container_name):
+    """Return the docker compose service name based on the `container_name`.
+
+    Arguments:
+    container_name -- the name of the container from which the service name is extracted
+    """
+    return docker_client().api.inspect_container(container_name)["Config"]["Labels"]["com.docker.compose.service"]
 
 
 def service_instance(container_name):
-    """Return the service instance number based on the `container_name`.
+    """Return the docker compose service instance (i.e. container number) based on the `container_name`.
 
     Arguments:
     container_name -- the name of the container from which the service instance is extracted
     """
-    return int(container_name.rsplit('-', 2)[2])
+    return int(
+        docker_client().api.inspect_container(container_name)["Config"]["Labels"][
+            "com.docker.compose.container-number"
+        ]
+    )
 
 
 def container_name(project_name, service_name, service_instance=1):
@@ -212,8 +222,7 @@ def container_hostname(container):
     Arguments:
     container -- docker.container from which the hostname is to be extracted
     """
-    import docker
-    return docker.from_env().api.inspect_container(container.name)['Config']['Hostname']
+    return docker_client().api.inspect_container(container.name)['Config']['Hostname']
 
 
 def container_ip(container, network_name=None):
@@ -223,8 +232,7 @@ def container_ip(container, network_name=None):
     container -- docker.container from which the IP is to be extracted
     network_name -- name of the docker network to inspect (if None, default network is used)
     """
-    import docker
-    return (docker.from_env().api.inspect_container(container.name)
+    return (docker_client().api.inspect_container(container.name)
         ['NetworkSettings']
         ['Networks']
         [network_name or '_'.join([project_name(container.name), 'default'])]
@@ -300,17 +308,17 @@ def irods_catalog_database_container(project_name, service_instance=1):
 
 def is_catalog_database_container(container):
     """Return True if `container` is the database service. Otherwise, False."""
-    return container.name.rsplit('-', 2)[-2] == irods_catalog_database_service()
+    return service_name(container.name) == irods_catalog_database_service()
 
 
 def is_irods_catalog_provider_container(container):
     """Return True if `container` is the iRODS CSP service. Otherwise, False."""
-    return '-'.join(container.name.rsplit('-', 4)[1:-1]) == irods_catalog_provider_service()
+    return service_name(container.name) == irods_catalog_provider_service()
 
 
 def is_irods_catalog_consumer_container(container):
     """Return True if `container` is the iRODS CSC service. Otherwise, False."""
-    return '-'.join(container.name.rsplit('-', 4)[1:-1]) == irods_catalog_consumer_service()
+    return service_name(container.name) == irods_catalog_consumer_service()
 
 
 def is_irods_server_in_local_zone(container, local_zone):
