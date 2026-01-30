@@ -1,13 +1,13 @@
 """Minimal compose Project implementation backed by Docker Compose CLI."""
 
 import os
+import pathlib
 import shutil
 import subprocess
 
 import docker
 
 from .container import Container
-import pathlib
 
 
 def _sanitize_project_name(name):
