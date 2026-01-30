@@ -59,9 +59,7 @@ class Project:
         label_filters = [f"com.docker.compose.project={self.name}"]
 
         if not service_names:
-            containers = self._docker_client.containers.list(
-                all=True, filters={"label": label_filters}
-            )
+            containers = self._docker_client.containers.list(all=True, filters={"label": label_filters})
             return [Container(c.name) for c in containers]
 
         containers = []
