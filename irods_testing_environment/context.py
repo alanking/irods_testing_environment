@@ -1,10 +1,13 @@
 import docker
 
 _docker_client = None
+
+
 def docker_client():
     """Return a static docker.client instance constructed from the local environment."""
     global _docker_client
     return docker.from_env() if _docker_client is None else _docker_client
+
 
 class context(object):
     """Class for holding Docker/Compose environment and container context information."""
@@ -176,7 +179,9 @@ def service_instance(container_name):
     container_name -- the name of the container from which the service instance is extracted
     """
     return int(
-        docker_client().api.inspect_container(container_name)['Config']['Labels']['com.docker.compose.container-number']
+        docker_client().api.inspect_container(container_name)["Config"]["Labels"][
+            "com.docker.compose.container-number"
+        ]
     )
 
 
