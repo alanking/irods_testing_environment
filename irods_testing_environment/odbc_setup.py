@@ -1086,8 +1086,8 @@ def configure_odbc_driver(platform_image, database_image, csp_container, odbc_dr
     import inspect
 
     base_name = inspect.currentframe().f_code.co_name
-    pf_part = "_".join(platform_image.split("-", 2)[:2])
-    db_part = database_image.replace(':', '_').replace('.', '')
+    pf_part = context.sanitize(f"{context.image_repo(platform_image)}_{context.image_tag(platform_image)}")
+    db_part = context.sanitize(f"{context.image_repo(database_image)}_{context.image_tag(database_image)}")
 
     func = globals().get(f'{base_name}_{pf_part}_{db_part}')
     if func:

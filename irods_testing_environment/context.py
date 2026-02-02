@@ -38,12 +38,25 @@ class context(object):
         platform_service_instance -- service instance to target for platform derivation
         """
         if not self.platform_image_tag:
-            self.platform_image_tag = base_image(self.docker_client.containers.get(
-                container_name(self.compose_project.name,
+            container = self.docker_client.containers.get(
+                container_name(
+                    self.compose_project.name,
                     platform_service_name or irods_catalog_provider_service(),
-                    platform_service_instance)))
+                    platform_service_instance,
+                )
+            )
 
-        return self.platform_image_tag.split('/')[-1]
+            # This is a reliable way to get the image tag for the platform. This has historically been derived from
+            # the image layer history, but the images from the base layers can shift and information is lost over
+            # time, so this is not reliable. Another way to do this would be through the use of Docker image labels.
+            command = "python3 -c \"import distro; print(f'{distro.id()}:{distro.version()}')\""
+            exit_code, output = container.exec_run(command)
+            if exit_code != 0:
+                raise RuntimeError(f"Failed to get platform for container [{container.name}]")
+
+            self.platform_image_tag = output.decode().strip()
+
+        return self.platform_image_tag
 
     def database(self, database_service_instance=1):
         """Return database Docker image from the database service in `self.compose_project`.
@@ -52,10 +65,13 @@ class context(object):
         database_service_instance -- service instance to target for database derivation
         """
         if not self.database_image_tag:
-            self.database_image_tag = base_image(self.docker_client.containers.get(
-                irods_catalog_database_container(self.compose_project.name)))
+            container = self.docker_client.containers.get(
+                container_name(self.compose_project.name, irods_catalog_database_service(), database_service_instance)
+            )
+            # Just take the first tag as it is likely the database image tag.
+            self.database_image_tag = container.image.tags[0]
 
-        return self.database_image_tag.split('/')[-1]
+        return self.database_image_tag
 
     def platform_name(self):
         """Return the repo name for the OS platform image for this Compose project."""
