@@ -856,10 +856,10 @@ def configure_rsyslog(container):
     import textwrap
     rsyslog_config_file = os.path.join('/etc', 'rsyslog.d', '00-irods.conf')
     rsyslog_config_contents = textwrap.dedent('''\
-        \$FileCreateMode 0644
-        \$DirCreateMode 0755
-        \$Umask 0000
-        \$template irods_format,\\"%msg%\\n\\"
+        \\$FileCreateMode 0644
+        \\$DirCreateMode 0755
+        \\$Umask 0000
+        \\$template irods_format,\\"%msg%\\n\\"
         :programname,startswith,\\"irodsServer\\" /var/log/irods/irods.log;irods_format
         & stop
         :programname,startswith,\\"irodsAgent\\" /var/log/irods/irods.log;irods_format
@@ -1083,7 +1083,7 @@ def setup_irods_catalog_consumers(ctx,
         service_names=[context.irods_catalog_consumer_service()])
 
     if consumer_service_instances:
-        if len(consumer_service_instances) is 0:
+        if len(consumer_service_instances) == 0:
             logging.warning('empty list of iRODS catalog service consumers to set up')
             return
 

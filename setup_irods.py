@@ -81,7 +81,7 @@ if __name__ == "__main__":
     logging.debug('provided project name [{}], docker-compose project name [{}]'
                   .format(args.project_name, ctx.compose_project.name))
 
-    if len(ctx.compose_project.containers()) is 0:
+    if len(ctx.compose_project.containers()) == 0:
         logging.critical('no containers found for project [directory=[{}], name=[{}]]'
                          .format(os.path.abspath(project_directory), ctx.compose_project.name))
 

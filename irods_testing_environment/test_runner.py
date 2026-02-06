@@ -143,7 +143,7 @@ class test_runner:
 
                 logging.info(f'[{self.name()}]: cmd [{ec}] [{cmd}]')
 
-                if ec is 0:
+                if ec == 0:
                     self.passed_tests().append((t, duration))
                     logging.error(f'[{self.name()}]: test passed [[{duration:>9.4f}]s] [{t or "all tests"}]')
 

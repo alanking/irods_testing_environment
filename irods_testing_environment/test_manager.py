@@ -128,7 +128,7 @@ class test_manager:
                 try:
                     f.result()
 
-                    if tr.rc is 0 and len(tr.failed_tests()) is 0:
+                    if tr.rc == 0 and len(tr.failed_tests()) == 0:
                         logging.error(f'[{tr.name()}]: tests completed successfully')
                     else:
                         logging.error(f'[{tr.name()}]: some tests failed')

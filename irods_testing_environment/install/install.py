@@ -52,7 +52,7 @@ class installer(object):
 
             glob_list = glob.glob(glob_str)
 
-            if len(glob_list) is 0:
+            if len(glob_list) == 0:
                 raise RuntimeError('no packages found [{}]'.format(glob_str))
 
             # TODO: allow specifying a suffix or something instead of taking everything
