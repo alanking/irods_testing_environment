@@ -109,6 +109,9 @@ try:
 
     options = ['--built_packages_root_directory', plugin_package_directory]
 
+    if not args.do_setup:
+        options.append("--skip-setup")
+
     rc = test_utils.run_plugin_tests(containers,
                                      args.plugin_name,
                                      args.test_hook,
