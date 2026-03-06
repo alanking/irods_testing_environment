@@ -134,6 +134,23 @@ if __name__ == "__main__":
         if args.do_setup:
             irods_config.configure_irods_federation_testing(ctx, zone_info_list[0], zone_info_list[1])
 
+        if args.upgrade_package_directory or args.upgrade_package_version:
+            # Log the iRODS commit ID before upgrade.
+            logging.error("upgrading iRODS packages from current version...")  # noqa: LOG015
+            cli.log_irods_version_and_commit_id(container)
+
+            install.make_installer(ctx.platform_name()).install_irods_packages(
+                ctx,
+                package_directory=args.upgrade_package_directory,
+                package_version=args.upgrade_package_version,
+            )
+            zone_info_list = irods_setup.get_info_for_zones(ctx, ['tempZone', 'otherZone'])
+            irods_setup.upgrade_irods_zones(ctx, zone_info_list)
+
+            # Log the new SHA and version after upgrade.
+            logging.error("iRODS packages upgraded")  # noqa: LOG015
+            cli.log_irods_version_and_commit_id(container)
+
         execute.execute_command(container, 'iadmin lu', user='irods')
         execute.execute_command(container, 'iadmin lz', user='irods')
 
