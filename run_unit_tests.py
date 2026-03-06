@@ -1,15 +1,13 @@
 # grown-up modules
-import compose.cli.command
-import docker
 import logging
 import os
 
+import docker
+
+import compose.cli.command
+
 # local modules
-from irods_testing_environment import archive
-from irods_testing_environment import context
-from irods_testing_environment import irods_config
-from irods_testing_environment import services
-from irods_testing_environment import test_utils
+from irods_testing_environment import archive, context, irods_config, services, test_utils, tls_setup
 
 if __name__ == "__main__":
     import argparse
@@ -96,8 +94,6 @@ if __name__ == "__main__":
             for i in range(args.executor_count)
         ]
 
-        # TODO(#296): configure TLS here if --use-tls was specified
-
         if args.upgrade_package_directory or args.upgrade_package_version:
             # Log the iRODS commit ID before upgrade.
             logging.error("upgrading iRODS packages from current version...")  # noqa: LOG015
@@ -112,6 +108,11 @@ if __name__ == "__main__":
             # Log the new SHA and version after upgrade.
             logging.error("iRODS packages upgraded")  # noqa: LOG015
             cli.log_irods_version_and_commit_id(containers[0])
+
+        if args.use_tls:
+            options.append('--use_ssl')
+            if args.do_setup:
+                tls_setup.configure_tls_in_zone(ctx.docker_client, ctx.compose_project)
 
         rc = test_utils.run_unit_tests(containers, args.tests, args.fail_fast)
 

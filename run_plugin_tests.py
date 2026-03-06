@@ -1,18 +1,15 @@
 # grown-up modules
 import argparse
-import compose.cli.command
-import docker
 import logging
 import os
 import textwrap
 
+import docker
+
+import compose.cli.command
+
 # local modules
-from irods_testing_environment import archive
-from irods_testing_environment import context
-from irods_testing_environment import irods_config
-from irods_testing_environment import logs
-from irods_testing_environment import services
-from irods_testing_environment import test_utils
+from irods_testing_environment import archive, context, irods_config, services, test_utils, tls_setup
 
 import cli
 
@@ -109,7 +106,8 @@ try:
 
     options = ['--built_packages_root_directory', plugin_package_directory]
 
-    # TODO(#296): configure TLS here if --use-tls was specified
+    if args.use_tls and args.do_setup:
+        tls_setup.configure_tls_in_zone(ctx.docker_client, ctx.compose_project)
 
     rc = test_utils.run_plugin_tests(containers,
                                      args.plugin_name,
