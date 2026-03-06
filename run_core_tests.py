@@ -25,26 +25,6 @@ if __name__ == "__main__":
     cli.add_irods_setup_args(parser)
     cli.add_irods_test_args(parser)
 
-    parser.add_argument(
-        '--upgrade-package-directory',
-        metavar='PATH_TO_DIRECTORY_WITH_PACKAGES',
-        dest='upgrade_package_directory',
-        help=textwrap.dedent('''\
-                            Path to local directory which contains iRODS packages to upgrade previously installed \
-                            packages. If neither this or --upgrade-package-version are specified, packages will not \
-                            be upgraded.'''),
-    )
-
-    parser.add_argument(
-        '--upgrade-package-version',
-        metavar='PACKAGE_VERSION_TO_DOWNLOAD',
-        dest='upgrade_package_version',
-        help=textwrap.dedent('''\
-                            Version of official iRODS packages to download and install, upgrading previously installed \
-                            packages. If neither this or --upgrade-package-directory are specified, packages will not \
-                            be upgraded.'''),
-    )
-
     args = parser.parse_args()
 
     if not args.package_version and not args.install_packages:

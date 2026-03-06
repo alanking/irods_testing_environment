@@ -36,6 +36,10 @@ if __name__ == "__main__":
         print('--irods-package-directory and --irods-package-version are incompatible')
         exit(1)
 
+    if args.upgrade_package_directory and args.upgrade_package_version:
+        print('--upgrade-package-directory and --upgrade-package-version are incompatible')
+        sys.exit(1)
+
     project_directory = os.path.abspath(args.project_directory or os.getcwd())
 
     if not args.install_packages:
@@ -93,6 +97,21 @@ if __name__ == "__main__":
         ]
 
         # TODO(#296): configure TLS here if --use-tls was specified
+
+        if args.upgrade_package_directory or args.upgrade_package_version:
+            # Log the iRODS commit ID before upgrade.
+            logging.error("upgrading iRODS packages from current version...")  # noqa: LOG015
+            cli.log_irods_version_and_commit_id(containers[0])
+            services.upgrade_irods_packages(
+                ctx,
+                zone_count=args.executor_count,
+                package_directory=args.upgrade_package_directory,
+                package_version=args.upgrade_package_version,
+                consumer_count=consumer_count,
+            )
+            # Log the new SHA and version after upgrade.
+            logging.error("iRODS packages upgraded")  # noqa: LOG015
+            cli.log_irods_version_and_commit_id(containers[0])
 
         rc = test_utils.run_unit_tests(containers, args.tests, args.fail_fast)
 

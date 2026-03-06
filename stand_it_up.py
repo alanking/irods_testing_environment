@@ -45,6 +45,10 @@ if __name__ == "__main__":
         print('--irods-package-directory and --irods-package-version are incompatible')
         exit(1)
 
+    if args.upgrade_package_directory and args.upgrade_package_version:
+        print('--upgrade-package-directory and --upgrade-package-version are incompatible')
+        sys.exit(1)
+
     project_directory = os.path.abspath(args.project_directory or os.getcwd())
 
     if not args.install_packages:
@@ -74,3 +78,27 @@ if __name__ == "__main__":
 
     if args.use_tls:
         tls_setup.configure_tls_in_zone(ctx.docker_client, ctx.compose_project)
+
+    # Get the container on which the command is to be executed
+    containers = [
+        ctx.docker_client.containers.get(
+            context.container_name(ctx.compose_project.name,
+                                   context.irods_catalog_provider_service(),
+                                   service_instance=1)
+            )
+    ]
+
+    if args.upgrade_package_directory or args.upgrade_package_version:
+        # Log the iRODS commit ID before upgrade.
+        logging.error("upgrading iRODS packages from current version...")  # noqa: LOG015
+        cli.log_irods_version_and_commit_id(containers[0])
+        services.upgrade_irods_packages(
+            ctx,
+            zone_count=1,
+            package_directory=args.upgrade_package_directory,
+            package_version=args.upgrade_package_version,
+            consumer_count=args.consumer_count,
+        )
+        # Log the new SHA and version after upgrade.
+        logging.error("iRODS packages upgraded")  # noqa: LOG015
+        cli.log_irods_version_and_commit_id(containers[0])
