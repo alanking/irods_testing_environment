@@ -131,6 +131,7 @@ class setup_input_builder(object):
         self.provides_local_storage = 'y'
         self.resource_name = ''
         self.vault_directory = ''
+        self.authentication_scheme = 'native'
 
         self.catalog_service_provider_host = 'localhost'
 
@@ -165,8 +166,10 @@ class setup_input_builder(object):
               provides_local_storage = None,
               resource_name = None,
               vault_directory = None,
+              authentication_scheme = None,
               **kwargs):
-        """Set values for the service account section of the setup script.
+        """
+        Set values for the service account section of the setup script.
 
         Returns this instance of the class.
 
@@ -205,6 +208,10 @@ class setup_input_builder(object):
         resource_name -- name used to identify the local storage
         vault_directory -- storage location of the default unixfilesystem resource created
                            during installation
+        authentication_scheme: Authentication scheme to use for service account.
+
+        Returns:
+            This instance of setup_input_builder.
         """
         self.irods_version = irods_version
 
@@ -240,6 +247,7 @@ class setup_input_builder(object):
         self.provides_local_storage = provides_local_storage or self.provides_local_storage
         self.resource_name = resource_name or self.resource_name
         self.vault_directory = vault_directory or self.vault_directory
+        self.authentication_scheme = authentication_scheme or self.authentication_scheme
 
         self.do_unattended_install = kwargs.get('do_unattended_install', False)
 
@@ -428,6 +436,7 @@ class setup_input_builder(object):
                 "service_account_group_name": 'irods'
             },
             "service_account_environment": {
+                "irods_authentication_scheme": self.authentication_scheme,
                 "irods_client_server_policy": "CS_NEG_REFUSE",
                 "irods_connection_pool_refresh_time_in_seconds": 300,
                 "irods_cwd": f"/{self.zone_name}/home/{self.admin_username}",
@@ -564,7 +573,7 @@ class setup_input_builder(object):
                 "schema_version": "v5",
                 "server_port_range_end": self.parallel_port_range_end,
                 "server_port_range_start": self.parallel_port_range_begin,
-                "zone_auth_scheme": "native",
+                "zone_auth_scheme": self.authentication_scheme,
                 "zone_key": self.zone_key,
                 "zone_name": self.zone_name,
                 "zone_port": self.zone_port,
@@ -643,6 +652,7 @@ class setup_input_builder(object):
                 "service_account_group_name": 'irods'
             },
             "service_account_environment": {
+                "irods_authentication_scheme": self.authentication_scheme,
                 "irods_client_server_policy": "CS_NEG_REFUSE",
                 "irods_connection_pool_refresh_time_in_seconds": 300,
                 "irods_cwd": f"/{self.zone_name}/home/{self.admin_username}",
@@ -788,7 +798,7 @@ class setup_input_builder(object):
                 "schema_version": "v5",
                 "server_port_range_end": self.parallel_port_range_end,
                 "server_port_range_start": self.parallel_port_range_begin,
-                "zone_auth_scheme": "native",
+                "zone_auth_scheme": self.authentication_scheme,
                 "zone_key": self.zone_key,
                 "zone_name": self.zone_name,
                 "zone_port": self.zone_port,
@@ -1025,6 +1035,7 @@ def setup_irods_server(container, setup_input, **kwargs):
     else:
         args = []
         if irods_config.get_irods_version(container) >= (5, 0, 90):
+            args = ['--auth-scheme', kwargs.get("authentication_scheme", "native")]
             if kwargs.get("use_tls", False):
                 args.append("--tls")
         args = " ".join(args)
