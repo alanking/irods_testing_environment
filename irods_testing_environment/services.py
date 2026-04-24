@@ -52,6 +52,10 @@ def create_topologies(ctx,
     # This should generate a list of identical zone infos
     zone_info_list = irods_setup.get_info_for_zones(ctx, zone_names, consumer_count)
 
+    # Forcibly enable TLS usage if using an authentication scheme other than native.
+    if kwargs.get("authentication_scheme", "native") != "native":
+        kwargs["use_tls"] = True
+
     if kwargs.get("use_tls", False):
         # The testing environment is using a self-signed certificate, so the certificate, key, and dhparams should be
         # generated ONCE and copied to each server.

@@ -32,6 +32,15 @@ if __name__ == "__main__":
                             If indicated, the iRODS servers will be set up using \
                             unattended installation.''')
 
+    parser.add_argument(
+        '--use-irods-auth',
+        dest='use_irods_auth',
+        action='store_true',
+        help=textwrap.dedent('''\
+                            Indicates that irods auth scheme should be used instead \
+                            of native. Implies --use-tls.'''),
+    )
+
     args = parser.parse_args()
 
     if not args.package_version and not args.install_packages:
@@ -41,6 +50,10 @@ if __name__ == "__main__":
     if args.package_directory and args.package_version:
         print('--irods-package-directory and --irods-package-version are incompatible')
         exit(1)
+
+    # Set use_tls option to True if using irods authentication as it is required.
+    if args.use_irods_auth:
+        args.use_tls = True
 
     project_directory = os.path.abspath(args.project_directory or os.getcwd())
 
@@ -70,6 +83,7 @@ if __name__ == "__main__":
         install_packages=args.install_packages,
         do_unattended_install=args.do_unattended_install,
         use_tls=args.use_tls,
+        authentication_scheme="irods" if args.use_irods_auth else "native",
     )
 
     containers = [

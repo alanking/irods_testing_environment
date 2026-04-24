@@ -132,6 +132,8 @@ class setup_input_builder(object):
         self.provides_local_storage = 'y'
         self.resource_name = ''
         self.vault_directory = ''
+        self.password_storage_mode = 'legacy'  # noqa: S105
+        self.authentication_scheme = 'native'
 
         self.catalog_service_provider_host = 'localhost'
 
@@ -164,8 +166,10 @@ class setup_input_builder(object):
               provides_local_storage = None,
               resource_name = None,
               vault_directory = None,
+              authentication_scheme = None,
               **kwargs):
-        """Set values for the service account section of the setup script.
+        """
+        Set values for the service account section of the setup script.
 
         Returns this instance of the class.
 
@@ -204,6 +208,10 @@ class setup_input_builder(object):
         resource_name -- name used to identify the local storage
         vault_directory -- storage location of the default unixfilesystem resource created
                            during installation
+        authentication_scheme: Authentication scheme to use for service account.
+
+        Returns:
+            This instance of setup_input_builder.
         """
         self.irods_version = irods_version
 
@@ -239,6 +247,9 @@ class setup_input_builder(object):
         self.provides_local_storage = provides_local_storage or self.provides_local_storage
         self.resource_name = resource_name or self.resource_name
         self.vault_directory = vault_directory or self.vault_directory
+        self.authentication_scheme = authentication_scheme or self.authentication_scheme
+
+        self.password_storage_mode = "both" if self.authentication_scheme == "irods" else "legacy"
 
         self.do_unattended_install = kwargs.get('do_unattended_install', False)
 
@@ -302,6 +313,10 @@ class setup_input_builder(object):
             # Insert entries for TLS prompts (added in 5.1.0).
             if self.irods_version >= (5, 0, 90):
                 insert_index = itertools.count(7)
+                if self.authentication_scheme == "irods":
+                    input_args.insert(next(insert_index), str(3))  # "both"
+                    input_args.insert(next(insert_index), str(1))  # "irods"
+                    input_args.insert(next(insert_index), "") # confirmation
                 if self.use_tls:
                     # Prompt for generating self-signed certificate. Testing environment takes care of this, so decline.
                     input_args.insert(next(insert_index), "no")
@@ -392,6 +407,10 @@ class setup_input_builder(object):
             # Insert entries for TLS prompts (added in 5.1.0).
             if self.irods_version >= (5, 0, 90):
                 insert_index = itertools.count(15)
+                if self.authentication_scheme == "irods":
+                    input_args.insert(next(insert_index), str(3))  # "both"
+                    input_args.insert(next(insert_index), str(1))  # "irods"
+                    input_args.insert(next(insert_index), "") # confirmation
                 if self.use_tls:
                     # Prompt for generating self-signed certificate. Testing environment takes care of this, so decline.
                     input_args.insert(next(insert_index), "no")
@@ -435,6 +454,7 @@ class setup_input_builder(object):
                 "service_account_group_name": 'irods'
             },
             "service_account_environment": {
+                "irods_authentication_scheme": self.authentication_scheme,
                 "irods_client_server_policy": "CS_NEG_REFUSE",
                 "irods_connection_pool_refresh_time_in_seconds": 300,
                 "irods_cwd": f"/{self.zone_name}/home/{self.admin_username}",
@@ -571,7 +591,7 @@ class setup_input_builder(object):
                 "schema_version": "v5",
                 "server_port_range_end": self.parallel_port_range_end,
                 "server_port_range_start": self.parallel_port_range_begin,
-                "zone_auth_scheme": "native",
+                "zone_auth_scheme": self.authentication_scheme,
                 "zone_key": self.zone_key,
                 "zone_name": self.zone_name,
                 "zone_port": self.zone_port,
@@ -611,6 +631,7 @@ class setup_input_builder(object):
             })
 
         else:
+            json_input["password_storage_mode"] = self.password_storage_mode
             if self.use_tls:
                 json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
                 json_input["server_config"]["tls_server"] = {
@@ -656,6 +677,7 @@ class setup_input_builder(object):
                 "service_account_group_name": 'irods'
             },
             "service_account_environment": {
+                "irods_authentication_scheme": self.authentication_scheme,
                 "irods_client_server_policy": "CS_NEG_REFUSE",
                 "irods_connection_pool_refresh_time_in_seconds": 300,
                 "irods_cwd": f"/{self.zone_name}/home/{self.admin_username}",
@@ -801,7 +823,7 @@ class setup_input_builder(object):
                 "schema_version": "v5",
                 "server_port_range_end": self.parallel_port_range_end,
                 "server_port_range_start": self.parallel_port_range_begin,
-                "zone_auth_scheme": "native",
+                "zone_auth_scheme": self.authentication_scheme,
                 "zone_key": self.zone_key,
                 "zone_name": self.zone_name,
                 "zone_port": self.zone_port,
@@ -852,6 +874,7 @@ class setup_input_builder(object):
             })
 
         else:
+            json_input["password_storage_mode"] = self.password_storage_mode
             if self.use_tls:
                 json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
                 json_input["server_config"]["tls_server"] = {
@@ -1044,6 +1067,8 @@ def setup_irods_server(container, setup_input, **kwargs):
     else:
         args = []
         if irods_config.get_irods_version(container) >= (5, 0, 90):
+            if kwargs.get("authentication_scheme", "native") == "irods":
+                args.append("--auth-scheme")
             if kwargs.get("use_tls", False):
                 args.append("--tls")
         args = " ".join(args)
