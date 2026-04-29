@@ -1,4 +1,5 @@
 import concurrent.futures
+import itertools
 import json
 import logging
 import os
@@ -131,6 +132,7 @@ class setup_input_builder(object):
         self.provides_local_storage = 'y'
         self.resource_name = ''
         self.vault_directory = ''
+        self.password_storage_mode = 'legacy'
         self.authentication_scheme = 'native'
 
         self.catalog_service_provider_host = 'localhost'
@@ -249,6 +251,8 @@ class setup_input_builder(object):
         self.vault_directory = vault_directory or self.vault_directory
         self.authentication_scheme = authentication_scheme or self.authentication_scheme
 
+        self.password_storage_mode = "both" if self.authentication_scheme == "irods" else "legacy"
+
         self.do_unattended_install = kwargs.get('do_unattended_install', False)
 
         self.use_tls = kwargs.get('use_tls', False)
@@ -309,16 +313,23 @@ class setup_input_builder(object):
             input_args.insert(6, str(self.vault_directory))
 
             # Insert entries for TLS prompts (added in 5.1.0).
-            if self.irods_version >= (5, 0, 90) and self.use_tls:
-                # tls_server
-                input_args.insert(7, self.certificate_chain_file)
-                input_args.insert(8, self.certificate_key_file)
-                input_args.insert(9, self.dh_params_file)
-                # tls_client
-                input_args.insert(10, self.ca_certificate_file)
-                input_args.insert(11, self.ca_certificate_path)
-                input_args.insert(12, str(2 if self.verify_server == "cert" else 1))
-                input_args.insert(13, "") # confirmation
+            if self.irods_version >= (5, 0, 90):
+                insert_index = itertools.count(7)
+                if self.authentication_scheme == "irods":
+                    input_args.insert(next(insert_index), str(3)) # "both"
+                    input_args.insert(next(insert_index), str(1)) # "irods"
+                if self.use_tls:
+                    # Prompt for generating self-signed certificate. Testing environment takes care of this, so decline.
+                    input_args.insert(next(insert_index), "no")
+                    # tls_server
+                    input_args.insert(next(insert_index), self.certificate_chain_file)
+                    input_args.insert(next(insert_index), self.certificate_key_file)
+                    input_args.insert(next(insert_index), self.dh_params_file)
+                    # tls_client
+                    input_args.insert(next(insert_index), self.ca_certificate_file)
+                    input_args.insert(next(insert_index), self.ca_certificate_path)
+                    input_args.insert(next(insert_index), str(2 if self.verify_server == "cert" else 1))
+                    input_args.insert(next(insert_index), "") # confirmation
         # Handle the difference between 4.2 servers and 4.3 servers.
         elif self.irods_version >= (4, 3, 0):
             input_args.insert(3, str(self.provides_local_storage))
@@ -395,16 +406,24 @@ class setup_input_builder(object):
             input_args.insert(14, str(self.vault_directory))
 
             # Insert entries for TLS prompts (added in 5.1.0).
-            if self.irods_version >= (5, 0, 90) and self.use_tls:
-                # tls_server
-                input_args.insert(15, self.certificate_chain_file)
-                input_args.insert(16, self.certificate_key_file)
-                input_args.insert(17, self.dh_params_file)
-                # tls_client
-                input_args.insert(18, self.ca_certificate_file)
-                input_args.insert(19, self.ca_certificate_path)
-                input_args.insert(20, str(2 if self.verify_server == "cert" else 1))
-                input_args.insert(21, "") # confirmation
+            if self.irods_version >= (5, 0, 90):
+                insert_index = itertools.count(15)
+                if self.authentication_scheme == "irods":
+                    input_args.insert(next(insert_index), str(3)) # "both"
+                    input_args.insert(next(insert_index), str(1)) # "irods"
+                    input_args.insert(next(insert_index), "") # confirmation
+                if self.use_tls:
+                    # Prompt for generating self-signed certificate. Testing environment takes care of this, so decline.
+                    input_args.insert(next(insert_index), "no")
+                    # tls_server
+                    input_args.insert(next(insert_index), self.certificate_chain_file)
+                    input_args.insert(next(insert_index), self.certificate_key_file)
+                    input_args.insert(next(insert_index), self.dh_params_file)
+                    # tls_client
+                    input_args.insert(next(insert_index), self.ca_certificate_file)
+                    input_args.insert(next(insert_index), self.ca_certificate_path)
+                    input_args.insert(next(insert_index), str(2 if self.verify_server == "cert" else 1))
+                    input_args.insert(next(insert_index), "") # confirmation
         # Handle the difference between 4.2 servers and 4.3 servers.
         elif self.irods_version >= (4, 3, 0):
             input_args.insert(11, str(self.provides_local_storage))
@@ -612,22 +631,24 @@ class setup_input_builder(object):
                 "server_control_plane_timeout_milliseconds": 10000
             })
 
-        elif self.use_tls:
-            json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
-            json_input["server_config"]["tls_server"] = {
-                "certificate_chain_file": self.certificate_chain_file,
-                "certificate_key_file": self.certificate_key_file,
-                "dh_params_file": self.dh_params_file,
-            }
-            json_input["server_config"]["tls_client"] = {"verify_server": self.verify_server}
-            if self.ca_certificate_file:
-                json_input["server_config"]["tls_client"]["ca_certificate_file"] = self.ca_certificate_file
-                json_input["service_account_environment"]["irods_ssl_ca_certificate_file"] = self.ca_certificate_file
-            if self.ca_certificate_path:
-                json_input["server_config"]["tls_client"]["ca_certificate_path"] = self.ca_certificate_path
-                json_input["service_account_environment"]["irods_ssl_ca_certificate_path"] = self.ca_certificate_path
-            json_input["service_account_environment"]["irods_client_server_policy"] = "CS_NEG_REQUIRE"
-            json_input["service_account_environment"]["irods_ssl_verify_server"] = self.verify_server
+        else:
+            json_input["password_storage_mode"] = self.password_storage_mode
+            if self.use_tls:
+                json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
+                json_input["server_config"]["tls_server"] = {
+                    "certificate_chain_file": self.certificate_chain_file,
+                    "certificate_key_file": self.certificate_key_file,
+                    "dh_params_file": self.dh_params_file,
+                }
+                json_input["server_config"]["tls_client"] = {"verify_server": self.verify_server}
+                if self.ca_certificate_file:
+                    json_input["server_config"]["tls_client"]["ca_certificate_file"] = self.ca_certificate_file
+                    json_input["service_account_environment"]["irods_ssl_ca_certificate_file"] = self.ca_certificate_file
+                if self.ca_certificate_path:
+                    json_input["server_config"]["tls_client"]["ca_certificate_path"] = self.ca_certificate_path
+                    json_input["service_account_environment"]["irods_ssl_ca_certificate_path"] = self.ca_certificate_path
+                json_input["service_account_environment"]["irods_client_server_policy"] = "CS_NEG_REQUIRE"
+                json_input["service_account_environment"]["irods_ssl_verify_server"] = self.verify_server
 
         return json.dumps(json_input, sort_keys=True, indent=4)
 
@@ -847,22 +868,25 @@ class setup_input_builder(object):
                 "server_control_plane_port": 1248,
                 "server_control_plane_timeout_milliseconds": 10000
             })
-        elif self.use_tls:
-            json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
-            json_input["server_config"]["tls_server"] = {
-                "certificate_chain_file": self.certificate_chain_file,
-                "certificate_key_file": self.certificate_key_file,
-                "dh_params_file": self.dh_params_file,
-            }
-            json_input["server_config"]["tls_client"] = {"verify_server": self.verify_server}
-            if self.ca_certificate_file:
-                json_input["server_config"]["tls_client"]["ca_certificate_file"] = self.ca_certificate_file
-                json_input["service_account_environment"]["irods_ssl_ca_certificate_file"] = self.ca_certificate_file
-            if self.ca_certificate_path:
-                json_input["server_config"]["tls_client"]["ca_certificate_path"] = self.ca_certificate_path
-                json_input["service_account_environment"]["irods_ssl_ca_certificate_path"] = self.ca_certificate_path
-            json_input["service_account_environment"]["irods_client_server_policy"] = "CS_NEG_REQUIRE"
-            json_input["service_account_environment"]["irods_ssl_verify_server"] = self.verify_server
+
+        else:
+            json_input["password_storage_mode"] = self.password_storage_mode
+            if self.use_tls:
+                json_input["server_config"]["client_server_policy"] = "CS_NEG_REQUIRE"
+                json_input["server_config"]["tls_server"] = {
+                    "certificate_chain_file": self.certificate_chain_file,
+                    "certificate_key_file": self.certificate_key_file,
+                    "dh_params_file": self.dh_params_file,
+                }
+                json_input["server_config"]["tls_client"] = {"verify_server": self.verify_server}
+                if self.ca_certificate_file:
+                    json_input["server_config"]["tls_client"]["ca_certificate_file"] = self.ca_certificate_file
+                    json_input["service_account_environment"]["irods_ssl_ca_certificate_file"] = self.ca_certificate_file
+                if self.ca_certificate_path:
+                    json_input["server_config"]["tls_client"]["ca_certificate_path"] = self.ca_certificate_path
+                    json_input["service_account_environment"]["irods_ssl_ca_certificate_path"] = self.ca_certificate_path
+                json_input["service_account_environment"]["irods_client_server_policy"] = "CS_NEG_REQUIRE"
+                json_input["service_account_environment"]["irods_ssl_verify_server"] = self.verify_server
 
         return json.dumps(json_input, sort_keys=True, indent=4)
 
@@ -1035,7 +1059,8 @@ def setup_irods_server(container, setup_input, **kwargs):
     else:
         args = []
         if irods_config.get_irods_version(container) >= (5, 0, 90):
-            args = ['--auth-scheme', kwargs.get("authentication_scheme", "native")]
+            if kwargs.get("authentication_scheme", "native") == "irods":
+                args.append("--auth-scheme")
             if kwargs.get("use_tls", False):
                 args.append("--tls")
         args = " ".join(args)
